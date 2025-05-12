@@ -1,0 +1,62 @@
+name: Go CI Pipeline
+on: [push, pull_request]  # Запускается при пуше в любую ветку или создании PR
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest  # Используем свежий Ubuntu
+
+    steps:
+      # Шаг 1: Забираем код из репозитория
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '^1.24'
+          check-latest: true
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ./go.sum
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Run gofmt
+        run: |
+          test -z $(gofmt -l .)
+
+      - name: Run golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+          golangci-lint run ./...
+
+      - name: Run unit tests
+        run: |
+          go test -v -short ./...
+        env:
+          GO_ENV: test
+
+      - name: Run integration tests
+        run: |
+          go test -v ./test/integration/...
+        env:
+          GO_ENV: test
+
+      - name: Check coverage
+        run: |
+          go test -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out | grep -v "100.0%"  # Показываем только непокрытые участки
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          args: --timeout=5m --exclude-use-default=false

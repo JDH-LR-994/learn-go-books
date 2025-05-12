@@ -5,11 +5,17 @@ import (
 	"net/http"
 )
 
-func Run() {
-	mux := http.NewServeMux()                                         // Создаём "маршрутизатор"
-	mux.HandleFunc("/books", http.HandlerFunc(handlers.BooksHandler)) // Подключаем handler
-	err := http.ListenAndServe(":8080", mux)                          // Запускаем сервер
-	if err != nil {
-		return
+type Server struct {
+	mux *http.ServeMux
+}
+
+func NewServer() *Server {
+	return &Server{
+		mux: http.NewServeMux(),
 	}
+}
+
+func (s *Server) Run(addr string) error {
+	s.mux.HandleFunc("/books", handlers.BooksHandler)
+	return http.ListenAndServe(addr, s.mux)
 }

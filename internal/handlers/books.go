@@ -19,7 +19,10 @@ func BooksHandler(resp http.ResponseWriter, req *http.Request) {
 		}
 		resp.WriteHeader(http.StatusOK)
 		resp.Header().Set("Content-Type", "application/json")
-		resp.Write(jsonBytes) // Отправляем JSON
+		_, err = resp.Write(jsonBytes)
+		if err != nil {
+			return
+		} // Отправляем JSON
 	}
 	// Обработчик POST - запроса
 	if req.Method == "POST" {
@@ -39,6 +42,9 @@ func BooksHandler(resp http.ResponseWriter, req *http.Request) {
 		}
 		resp.WriteHeader(http.StatusCreated)
 		resp.Header().Set("Content-Type", "application/json")
-		resp.Write(jsonBytes)
+		_, err = resp.Write(jsonBytes)
+		if err != nil {
+			return
+		}
 	}
 }
